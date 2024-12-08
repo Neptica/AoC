@@ -68,69 +68,117 @@ fn create_rules(lines: io::Lines<io::BufReader<File>>) -> (Vec<i32>, Vec<Vec<i32
     (number_guide, rules_set, lists)
 }
 
-fn calc_ans(file: &str) -> i32 {
-    if let Ok(input) = read_lines(file) {
-        let (guides, rules, lists) = create_rules(input);
-        for i in 0..guides.len() {
-            println!("{}: ({}, {:?})", i, guides[i], rules[i]);
-        }
-        let mut ans = 0;
-
-        for mut list in lists {
-            let mut complete = false;
-            let mut pos = 1;
-            loop {
-                let mut moved = false;
-                for index in pos..list.len() {
-                    if let Ok(rule_index) = guides.binary_search(&list[index]) {
-                        for cindex in 0..index {
-                            if rules[rule_index].contains(&list[cindex]) {
-                                let current = list.remove(index);
-                                list.insert(cindex, current);
-                                pos = cindex + 1;
-                                moved = true;
-                                break;
-                            }
-                        }
-                        if moved {
-                            break;
-                        }
-                    }
-                    if index == list.len() - 1 {
-                        complete = true;
+fn rearrange(mut update: Vec<i32>, guides: Vec<i32>, rules: Vec<Vec<i32>>) -> Vec<i32> {
+    let mut complete = false;
+    let mut pos = 1;
+    loop {
+        let mut moved = false;
+        for index in pos..update.len() {
+            if let Ok(rule_index) = guides.binary_search(&update[index]) {
+                for cindex in 0..index {
+                    if rules[rule_index].contains(&update[cindex]) {
+                        let current = update.remove(index);
+                        update.insert(cindex, current);
+                        pos = cindex + 1;
+                        moved = true;
+                        break;
                     }
                 }
-                if complete {
+                if moved {
                     break;
                 }
             }
+            if index == update.len() - 1 {
+                complete = true;
+            }
+        }
+        if complete {
+            break;
+        }
+    }
+    update
+}
 
-            let middle = (list.len() - 1) / 2;
-            ans += list[middle];
+fn part_one(file: &str) -> i32 {
+    if let Ok(input) = read_lines(file) {
+        let (guides, rules, lists) = create_rules(input);
+        // for i in 0..guides.len() {
+        //     println!("{}: ({}, {:?})", i, guides[i], rules[i]);
+        // }
+        let mut ans = 0;
 
-            // let mut proper: Vec<i32> = Vec::new();
-            // for number in list {
-            //     if proper.is_empty() {
-            //         proper.push(number);
-            //     } else if let Ok(rule_index) = guides.binary_search(&number) {
-            //         let mut inserted = false;
-            //         for (index, value) in proper.iter().enumerate() {
-            //             if rules[rule_index].contains(value) {
-            //                 proper.insert(index, number);
-            //                 inserted = true;
-            //                 break;
-            //             }
-            //         }
-            //         if !inserted {
-            //             proper.push(number);
-            //         }
-            //     } else {
-            //         proper.push(number);
-            //     }
-            // }
+        for list in lists {
+            let mut ready = true;
+            for index in 1..list.len() {
+                if let Ok(rule_index) = guides.binary_search(&list[index]) {
+                    for cindex in 0..index {
+                        if rules[rule_index].contains(&list[cindex]) {
+                            ready = false;
+                        }
+                    }
+                }
+            }
+            if ready {
+                ans += list[(list.len() - 1) / 2];
+            }
         }
 
-        println!("Sum of the Middle Element of Proper Lists: {}", ans);
+        ans
+    } else {
+        println!("Error in reading file.");
+        -1
+    }
+}
+
+fn part_two(file: &str) -> i32 {
+    if let Ok(input) = read_lines(file) {
+        let (guides, rules, lists) = create_rules(input);
+        let mut ans = 0;
+
+        for mut list in lists {
+            let mut ready = true;
+            for index in 1..list.len() {
+                if let Ok(rule_index) = guides.binary_search(&list[index]) {
+                    for cindex in 0..index {
+                        if rules[rule_index].contains(&list[cindex]) {
+                            ready = false;
+                        }
+                    }
+                }
+            }
+            if !ready {
+                let mut complete = false;
+                let mut pos = 1;
+                loop {
+                    let mut moved = false;
+                    for index in pos..list.len() {
+                        if let Ok(rule_index) = guides.binary_search(&list[index]) {
+                            for cindex in 0..index {
+                                if rules[rule_index].contains(&list[cindex]) {
+                                    let current = list.remove(index);
+                                    list.insert(cindex, current);
+                                    pos = cindex + 1;
+                                    moved = true;
+                                    break;
+                                }
+                            }
+                            if moved {
+                                break;
+                            }
+                        }
+                        if index == list.len() - 1 {
+                            complete = true;
+                        }
+                    }
+                    if complete {
+                        break;
+                    }
+                }
+                let middle = (list.len() - 1) / 2;
+                ans += list[middle];
+            }
+        }
+
         ans
     } else {
         println!("Error in reading file.");
@@ -139,7 +187,13 @@ fn calc_ans(file: &str) -> i32 {
 }
 
 fn main() {
-    calc_ans("./input.txt");
+    // part one
+    let ans = part_one("./input.txt");
+    println!("Sum of the Middle Element of Proper Lists: {}", ans);
+
+    // part two
+    let ans = part_two("./input.txt");
+    println!("Sum of the Middle Element of Proper Lists: {}", ans);
 }
 
 #[cfg(test)]
@@ -148,6 +202,6 @@ mod tests {
 
     #[test]
     fn test_ans() {
-        assert_eq!(calc_ans("src/test.txt"), 143);
+        assert_eq!(part_one("src/test.txt"), 143);
     }
 }
