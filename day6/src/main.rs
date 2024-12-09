@@ -98,10 +98,11 @@ fn check_loop(
     mut x: usize,
     mut y: usize,
     mut direction: i32,
-    map: Vec<Vec<char>>,
-) -> (usize, usize) {
+    mut map: Vec<Vec<char>>,
+) -> (i32, i32) {
     let mut obstacle_x = x;
     let mut obstacle_y = y;
+
     match direction {
         0 => obstacle_y -= 1,
         1 => obstacle_x += 1,
@@ -109,9 +110,9 @@ fn check_loop(
         3 => obstacle_x -= 1,
         _ => println!("Invalid direction in check_loop"),
     }
-    let obstacle = (obstacle_x, obstacle_y);
-
-    let mut turn_points = vec![(x, y)];
+    let obstacle = (obstacle_x as i32, obstacle_y as i32);
+    map[obstacle_y][obstacle_x] = '#';
+    let mut turn_points = vec![(x, y, direction)];
     direction = (direction + 1) % 4;
     let mut current_x = x;
     let mut current_y = y;
@@ -130,8 +131,6 @@ fn check_loop(
                             inbounds = false
                         }
                     } else {
-                        turn_points.push((current_x, current_y));
-                        direction = (direction + 1) % 4;
                         break;
                     }
                 }
@@ -144,8 +143,6 @@ fn check_loop(
                             inbounds = false
                         }
                     } else {
-                        turn_points.push((current_x, current_y));
-                        direction = (direction + 1) % 4;
                         break;
                     }
                 }
@@ -158,8 +155,6 @@ fn check_loop(
                             inbounds = false
                         }
                     } else {
-                        turn_points.push((current_x, current_y));
-                        direction = (direction + 1) % 4;
                         break;
                     }
                 }
@@ -172,8 +167,6 @@ fn check_loop(
                             inbounds = false
                         }
                     } else {
-                        turn_points.push((current_x, current_y));
-                        direction = (direction + 1) % 4;
                         break;
                     }
                 }
@@ -181,13 +174,20 @@ fn check_loop(
             _ => println!("Guard not actually found"),
         }
         if !inbounds {
-            return (0, 0);
+            return (-1, -1); // remove this from final HashSet
         }
-        for starting_pos in &turn_points[..] {
-            if (current_x, current_y) == *starting_pos {
+
+        // don't check previous value because gotta walk away first
+        for starting_pos in &turn_points[..turn_points.len() - 1] {
+            if (current_x, current_y, direction) == *starting_pos {
+                println!("Obstacle Location: {:?}", obstacle);
                 return obstacle;
             }
         }
+
+        // update after check
+        turn_points.push((current_x, current_y, direction));
+        direction = (direction + 1) % 4;
     }
 }
 
@@ -210,13 +210,9 @@ fn calc(filename: &str) -> i32 {
             '<' => direction = 3,
             _ => println!("Guard not actually found"),
         }
-        println!(
-            "pos of guard: {},{}; orientation of guard: {}",
-            x, y, direction
-        );
 
         let mut traveled: HashSet<(i32, i32)> = HashSet::new();
-        let mut obstacle_placements: HashSet<(usize, usize)> = HashSet::new();
+        let mut obstacle_placements: HashSet<(i32, i32)> = HashSet::new();
         let mut first_walk = true;
         loop {
             let walk = part_one(x, y, direction, &layout[..]);
@@ -225,6 +221,9 @@ fn calc(filename: &str) -> i32 {
                 x = walk.1 .0;
                 y = walk.1 .1;
                 first_walk = false;
+                if !walk.2 {
+                    break;
+                }
                 continue;
             }
             for tuple in &walk.0[..walk.0.len() - 1] {
@@ -233,47 +232,55 @@ fn calc(filename: &str) -> i32 {
                 // println!("Here");
                 match direction {
                     0 => {
-                        if *y_check != 1 {
-                            let obs = check_loop(
+                        if *y_check != 0 {
+                            let (xer, yer) = check_loop(
                                 *x_check as usize,
                                 *y_check as usize,
                                 direction,
                                 layout.clone(),
                             );
-                            obstacle_placements.insert(obs);
+                            if !traveled.contains(&(xer, yer)) {
+                                obstacle_placements.insert((xer, yer));
+                            }
                         }
                     }
                     1 => {
-                        if *x_check as usize != layout[*y_check as usize].len() - 2 {
-                            let obs = check_loop(
+                        if *x_check as usize != layout[*y_check as usize].len() - 1 {
+                            let (xer, yer) = check_loop(
                                 *x_check as usize,
                                 *y_check as usize,
                                 direction,
                                 layout.clone(),
                             );
-                            obstacle_placements.insert(obs);
+                            if !traveled.contains(&(xer, yer)) {
+                                obstacle_placements.insert((xer, yer));
+                            }
                         }
                     }
                     2 => {
-                        if *y_check as usize != layout.len() - 2 {
-                            let obs = check_loop(
+                        if *y_check as usize != layout.len() - 1 {
+                            let (xer, yer) = check_loop(
                                 *x_check as usize,
                                 *y_check as usize,
                                 direction,
                                 layout.clone(),
                             );
-                            obstacle_placements.insert(obs);
+                            if !traveled.contains(&(xer, yer)) {
+                                obstacle_placements.insert((xer, yer));
+                            }
                         }
                     }
                     3 => {
-                        if *x_check != 1 {
-                            let obs = check_loop(
+                        if *x_check != 0 {
+                            let (xer, yer) = check_loop(
                                 *x_check as usize,
                                 *y_check as usize,
                                 direction,
                                 layout.clone(),
                             );
-                            obstacle_placements.insert(obs);
+                            if !traveled.contains(&(xer, yer)) {
+                                obstacle_placements.insert((xer, yer));
+                            }
                         }
                     }
                     _ => println!("Guard not actually found"),
@@ -288,7 +295,12 @@ fn calc(filename: &str) -> i32 {
         }
         let answer = traveled.len();
         println!("Squares Traveled: {}", answer);
-        return obstacle_placements.len() as i32;
+
+        let mut ans2 = obstacle_placements.len();
+        if obstacle_placements.contains(&(-1, -1)) {
+            ans2 -= 1;
+        }
+        return ans2 as i32;
     }
     0
 }
