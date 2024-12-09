@@ -94,8 +94,24 @@ fn part_one(
     (locations, (x_last, y_last), go_on)
 }
 
-fn check_loop(mut x: usize, mut y: usize, mut direction: i32, map: Vec<Vec<char>>) -> i32 {
-    let starting_pos = (x, y);
+fn check_loop(
+    mut x: usize,
+    mut y: usize,
+    mut direction: i32,
+    map: Vec<Vec<char>>,
+) -> (usize, usize) {
+    let mut obstacle_x = x;
+    let mut obstacle_y = y;
+    match direction {
+        0 => obstacle_y -= 1,
+        1 => obstacle_x += 1,
+        2 => obstacle_y += 1,
+        3 => obstacle_x -= 1,
+        _ => println!("Invalid direction in check_loop"),
+    }
+    let obstacle = (obstacle_x, obstacle_y);
+
+    let mut turn_points = vec![(x, y)];
     direction = (direction + 1) % 4;
     let mut current_x = x;
     let mut current_y = y;
@@ -114,6 +130,7 @@ fn check_loop(mut x: usize, mut y: usize, mut direction: i32, map: Vec<Vec<char>
                             inbounds = false
                         }
                     } else {
+                        turn_points.push((current_x, current_y));
                         direction = (direction + 1) % 4;
                         break;
                     }
@@ -127,6 +144,7 @@ fn check_loop(mut x: usize, mut y: usize, mut direction: i32, map: Vec<Vec<char>
                             inbounds = false
                         }
                     } else {
+                        turn_points.push((current_x, current_y));
                         direction = (direction + 1) % 4;
                         break;
                     }
@@ -140,6 +158,7 @@ fn check_loop(mut x: usize, mut y: usize, mut direction: i32, map: Vec<Vec<char>
                             inbounds = false
                         }
                     } else {
+                        turn_points.push((current_x, current_y));
                         direction = (direction + 1) % 4;
                         break;
                     }
@@ -153,6 +172,7 @@ fn check_loop(mut x: usize, mut y: usize, mut direction: i32, map: Vec<Vec<char>
                             inbounds = false
                         }
                     } else {
+                        turn_points.push((current_x, current_y));
                         direction = (direction + 1) % 4;
                         break;
                     }
@@ -161,17 +181,19 @@ fn check_loop(mut x: usize, mut y: usize, mut direction: i32, map: Vec<Vec<char>
             _ => println!("Guard not actually found"),
         }
         if !inbounds {
-            return 0;
+            return (0, 0);
         }
-        if (current_x, current_y) == starting_pos {
-            return 1;
+        for starting_pos in &turn_points[..] {
+            if (current_x, current_y) == *starting_pos {
+                return obstacle;
+            }
         }
     }
 }
 
-fn main() {
+fn calc(filename: &str) -> i32 {
     // part one
-    if let Ok(map) = read_lines("./input.txt") {
+    if let Ok(map) = read_lines(filename) {
         let mut direction = 0;
 
         let layout: Vec<Vec<char>> = map
@@ -194,8 +216,8 @@ fn main() {
         );
 
         let mut traveled: HashSet<(i32, i32)> = HashSet::new();
+        let mut obstacle_placements: HashSet<(usize, usize)> = HashSet::new();
         let mut first_walk = true;
-        let mut part_two_ans = 0;
         loop {
             let walk = part_one(x, y, direction, &layout[..]);
             if first_walk {
@@ -209,46 +231,49 @@ fn main() {
                 traveled.insert(*tuple);
                 let (x_check, y_check) = tuple;
                 // println!("Here");
-                println!("Possible Loop Placements: {}", part_two_ans);
                 match direction {
                     0 => {
                         if *y_check != 1 {
-                            part_two_ans += check_loop(
+                            let obs = check_loop(
                                 *x_check as usize,
                                 *y_check as usize,
                                 direction,
                                 layout.clone(),
                             );
+                            obstacle_placements.insert(obs);
                         }
                     }
                     1 => {
                         if *x_check as usize != layout[*y_check as usize].len() - 2 {
-                            part_two_ans += check_loop(
+                            let obs = check_loop(
                                 *x_check as usize,
                                 *y_check as usize,
                                 direction,
                                 layout.clone(),
                             );
+                            obstacle_placements.insert(obs);
                         }
                     }
                     2 => {
                         if *y_check as usize != layout.len() - 2 {
-                            part_two_ans += check_loop(
+                            let obs = check_loop(
                                 *x_check as usize,
                                 *y_check as usize,
                                 direction,
                                 layout.clone(),
                             );
+                            obstacle_placements.insert(obs);
                         }
                     }
                     3 => {
                         if *x_check != 1 {
-                            part_two_ans += check_loop(
+                            let obs = check_loop(
                                 *x_check as usize,
                                 *y_check as usize,
                                 direction,
                                 layout.clone(),
                             );
+                            obstacle_placements.insert(obs);
                         }
                     }
                     _ => println!("Guard not actually found"),
@@ -260,10 +285,25 @@ fn main() {
             direction = (direction + 1) % 4;
             x = walk.1 .0;
             y = walk.1 .1;
-            println!("Possible Loop Placements: {}", part_two_ans);
         }
-
         let answer = traveled.len();
         println!("Squares Traveled: {}", answer);
+        return obstacle_placements.len() as i32;
+    }
+    0
+}
+
+fn main() {
+    let ans = calc("./input.txt");
+    println!("Possible Loop Placements: {}", ans);
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_main() {
+        assert_eq!(calc("src/test.txt"), 6);
     }
 }
