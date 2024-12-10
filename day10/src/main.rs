@@ -27,10 +27,10 @@ fn find_trailheads(map: &[Vec<i8>]) -> Vec<(usize, usize)> {
 fn score(
     map: &[Vec<i8>],
     pos: (usize, usize),
-    mut trails: HashSet<(usize, usize)>,
-) -> HashSet<(usize, usize)> {
+    mut trails: Vec<(usize, usize)>,
+) -> Vec<(usize, usize)> {
     if map[pos.1][pos.0] == 9 {
-        trails.insert((pos.0, pos.1));
+        trails.push((pos.0, pos.1));
         return trails;
     }
     // ^
@@ -68,7 +68,7 @@ fn main() {
 
     let mut answer = 0;
     for start in trailheads {
-        let trailhead_ends = score(&map, start, HashSet::new());
+        let trailhead_ends = score(&map, start, Vec::new());
         // println!("Score of trail {:?} is {:?}", start, trailhead_ends);
         answer += trailhead_ends.len();
     }
