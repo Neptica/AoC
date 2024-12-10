@@ -37,41 +37,46 @@ fn main() {
         let y_depth = lines.len();
         let x_depth = lines[0].len();
 
+        let mut antenna_count: i32 = 0;
         for (key, values) in &map {
             let char_key = char::from_u32(*key).unwrap_or('?'); // Convert the u32 key back to a char
             println!("Key: '{}', Values: {:?}", char_key, values);
 
             for i in 0..values.len() {
+                let first = values[i];
                 for j in i + 1..values.len() {
-                    let first = values[i];
+                    // automatically weeds out sole antennas with insert inside second loop
                     let second = values[j];
+                    // antinodes.insert(first);
+                    // antinodes.insert(second);
 
-                    let dist1 = (first.0 - second.0, first.1 - second.1);
-                    let dist2 = (second.0 - first.0, second.1 - first.1);
+                    let dist = (first.0 - second.0, first.1 - second.1);
 
-                    let antinode1 = (first.0 + dist1.0, first.1 + dist1.1);
-                    let antinode2 = (second.0 + dist2.0, second.1 + dist2.1);
+                    let mut antinode1 = (first.0 - dist.0, first.1 - dist.1);
+                    let mut antinode2 = (second.0 + dist.0, second.1 + dist.1);
 
-                    println!("{:?}, {:?}", antinode1, antinode2);
+                    // println!("{:?}, {:?}", antinode1, antinode2);
 
-                    if antinode1.0 > -1
+                    while antinode1.0 > -1
                         && antinode1.0 < x_depth as i32
                         && antinode1.1 > -1
                         && antinode1.1 < y_depth as i32
                     {
                         antinodes.insert(antinode1);
+                        antinode1 = (antinode1.0 - dist.0, antinode1.1 - dist.1);
                     }
-                    if antinode2.0 > -1
+                    while antinode2.0 > -1
                         && antinode2.0 < x_depth as i32
                         && antinode2.1 > -1
                         && antinode2.1 < y_depth as i32
                     {
                         antinodes.insert(antinode2);
+                        antinode2 = (antinode2.0 + dist.0, antinode2.1 + dist.1);
                     }
                 }
             }
         }
-        println!("Antinodes: {:?}", antinodes);
-        println!("Antinode Count: {}", antinodes.len());
+        // println!("Antinodes Separate from Antennae: {:?}", antinodes);
+        println!("Antinode Count: {}", antinodes.len() as i32);
     }
 }
