@@ -1,2 +1,5 @@
 91380424522 < Fake answer 191380424522 < answer = 6432869891895
 I was forgetting that numbers greater than 9 require two chars so char was the wrong type to use
+
+New Checksum
+6467290479134

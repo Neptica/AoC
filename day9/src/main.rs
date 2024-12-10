@@ -21,6 +21,7 @@ fn main() {
                 .collect();
             let mut disk: VecDeque<String> = VecDeque::new();
 
+            // part one
             for (index, digit) in line.into_iter().enumerate() {
                 if index % 2 == 0 {
                     // id work
@@ -53,8 +54,76 @@ fn main() {
                 id += 1;
             }
             println!("Checksum: {}", checksum);
-
             // println!("{:?}", chars);
+        }
+    }
+
+    // part two
+    if let Ok(mut input) = read_file("./input.txt") {
+        if let Some(line) = input.next() {
+            let line: Vec<String> = line
+                .expect("Line not gotten")
+                .chars() // .filter(|c| c.is_digit(10)) for weeding out non digit chars
+                .map(|c| c.to_string())
+                .collect();
+
+            let mut disk: Vec<(String, i32)> = line
+                .iter()
+                .enumerate()
+                .map(|(i, s)| {
+                    if i % 2 == 0 {
+                        ((i / 2).to_string(), s.parse::<i32>().expect("Failed parse"))
+                    } else {
+                        (".".to_string(), s.parse::<i32>().expect("Failed to parse"))
+                    }
+                })
+                .collect();
+
+            for tuple in &disk {
+                print!("{:?} ", tuple);
+            }
+            println!();
+
+            let mut disk_len = disk.len();
+            let mut index = 0;
+            while index < disk_len {
+                if disk[index].0 == "." {
+                    if disk[index].1 == 0 {
+                        disk.remove(index);
+                        disk_len -= 1;
+                        continue;
+                    }
+
+                    let dot_count = disk[index].1;
+                    for (i, back) in disk.clone().into_iter().enumerate().rev() {
+                        if back.0 != "." && index < i && back.1 <= dot_count {
+                            disk[index].1 -= back.1;
+                            disk[i].0 = ".".to_string(); // change don't remove
+                            if disk[index].1 == 0 {
+                                disk.remove(index);
+                                disk_len -= 1;
+                            }
+                            disk.insert(index, back);
+                            break;
+                        }
+                    }
+                }
+                index += 1;
+            }
+
+            let mut id = 0;
+            let mut new_checksum = 0;
+            for tuple in disk {
+                if tuple.0 != "." {
+                    for _ in 0..tuple.1 {
+                        new_checksum += tuple.0.parse::<u128>().expect("Failed to parse") * id;
+                        id += 1;
+                    }
+                } else {
+                    id += tuple.1 as u128;
+                }
+            }
+            println!("New Checksum: {}", new_checksum);
         }
     }
 }
